@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from typing import AsyncIterator
 
 import numpy as np
@@ -58,7 +57,6 @@ class KokoroEngine:
     def _ensure_pipeline(self):
         if self._pipeline is not None:
             return
-        os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
         from kokoro import KPipeline
 
         logger.info("Loading Kokoro pipeline...")
