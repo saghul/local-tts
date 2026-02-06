@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import sys
 
 
 def run_client() -> None:
     parser = argparse.ArgumentParser(description="Local TTS client")
     parser.add_argument(
         "--server",
-        default="ws://localhost:8880",
-        help="Server WebSocket URL (default: ws://localhost:8880)",
+        default="http://localhost:8880",
+        help="Server URL (default: http://localhost:8880)",
     )
     parser.add_argument(
         "--voice",

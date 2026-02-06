@@ -18,7 +18,7 @@ def main() -> None:
 
     # Client
     cp = sub.add_parser("client", help="Start the TTS client")
-    cp.add_argument("--server", default="ws://localhost:8880", help="Server URL")
+    cp.add_argument("--server", default="http://localhost:8880", help="Server URL")
     cp.add_argument("--voice", default="af_heart", help="Voice ID")
     cp.add_argument("--model", default="kokoro", help="Model ID")
     cp.add_argument("--speed", type=float, default=1.0, help="Speech speed")
