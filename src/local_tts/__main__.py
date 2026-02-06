@@ -3,6 +3,11 @@ from __future__ import annotations
 import argparse
 import sys
 
+DEFAULT_VOICES = {
+    "kokoro": "af_heart",
+    "pocket": "alba",
+}
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -17,11 +22,27 @@ def main() -> None:
     sp.add_argument("--port", type=int, default=8880, help="Bind port (default: 8880)")
 
     # Client
-    cp = sub.add_parser("client", help="Start the TTS client")
+    cp = sub.add_parser(
+        "client",
+        help="Start the TTS client",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "supported models:\n"
+            "  kokoro   Kokoro TTS (82M params, English)\n"
+            "           Voices: af_heart (default), af_alloy, af_bella,\n"
+            "           af_jessica, af_nova, af_river, af_sarah, af_sky,\n"
+            "           am_adam, am_echo, am_eric, am_michael, am_puck, ...\n"
+            "  pocket   Pocket TTS (600M params, English)\n"
+            "           Voices: alba (default), fantine, cosette, eponine,\n"
+            "           azelma, marius, javert, jean\n"
+            "\n"
+            "use GET /v1/voices?model_id=MODEL for the full voice list"
+        ),
+    )
     cp.add_argument("--server", default="http://localhost:8880", help="Server URL")
-    cp.add_argument("--voice", default="af_heart", help="Voice ID")
-    cp.add_argument("--model", default="kokoro", help="Model ID")
-    cp.add_argument("--speed", type=float, default=1.0, help="Speech speed")
+    cp.add_argument("--voice", default=None, help="Voice ID (default: per-model)")
+    cp.add_argument("--model", default="kokoro", choices=DEFAULT_VOICES, help="Model ID (default: kokoro)")
+    cp.add_argument("--speed", type=float, default=1.0, help="Speech speed (default: 1.0)")
     cp.add_argument("-t", "--text", help="Text to synthesize (non-interactive)")
 
     args = parser.parse_args()
@@ -34,10 +55,12 @@ def main() -> None:
         import asyncio
         from .client.repl import run_once, run_repl
 
+        voice = args.voice or DEFAULT_VOICES.get(args.model, "af_heart")
+
         if args.text:
-            asyncio.run(run_once(args.server, args.voice, args.model, args.speed, args.text))
+            asyncio.run(run_once(args.server, voice, args.model, args.speed, args.text))
         else:
-            asyncio.run(run_repl(args.server, args.voice, args.model, args.speed))
+            asyncio.run(run_repl(args.server, voice, args.model, args.speed))
 
     else:
         parser.print_help()
