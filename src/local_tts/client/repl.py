@@ -17,25 +17,27 @@ async def run_repl(server_url: str, voice_id: str, model_id: str, speed: float) 
     print("Commands: /quit  /interrupt\n")
 
     loop = asyncio.get_running_loop()
-    input_queue: asyncio.Queue[str | None] = asyncio.Queue()
+    stdin_reader = asyncio.StreamReader()
+    transport, _ = await loop.connect_read_pipe(
+        lambda: asyncio.StreamReaderProtocol(stdin_reader), sys.stdin
+    )
 
-    async def _read_input_loop() -> None:
-        while True:
-            try:
-                text = await loop.run_in_executor(None, _read_input)
-                await input_queue.put(text)
-            except EOFError:
-                await input_queue.put(None)
-                break
-
-    input_task = asyncio.create_task(_read_input_loop())
+    pending_read: asyncio.Task[bytes] | None = None
 
     try:
         while True:
-            text = await input_queue.get()
-            if text is None:
+            if pending_read is None:
+                sys.stdout.write("> ")
+                sys.stdout.flush()
+                pending_read = asyncio.ensure_future(stdin_reader.readline())
+
+            line = await pending_read
+            pending_read = None
+
+            if not line:  # EOF
                 break
 
+            text = line.decode().rstrip("\n")
             cmd = text.strip().lower()
             if cmd == "/quit":
                 break
@@ -44,12 +46,18 @@ async def run_repl(server_url: str, voice_id: str, model_id: str, speed: float) 
             if not text.strip():
                 continue
 
-            await _synthesize_with_interrupt(client, player, text, speed, input_queue)
+            quit_requested, pending_read = await _synthesize_with_interrupt(
+                client, player, text, speed, stdin_reader
+            )
+            if quit_requested:
+                break
 
     except KeyboardInterrupt:
         print()
     finally:
-        input_task.cancel()
+        if pending_read is not None and not pending_read.done():
+            pending_read.cancel()
+        transport.close()
 
 
 async def _synthesize_with_interrupt(
@@ -57,8 +65,12 @@ async def _synthesize_with_interrupt(
     player: AudioPlayer,
     text: str,
     speed: float,
-    input_queue: asyncio.Queue[str | None],
-) -> None:
+    stdin_reader: asyncio.StreamReader,
+) -> tuple[bool, asyncio.Task[bytes] | None]:
+    """Run synthesis with interrupt support.
+
+    Returns (quit_requested, pending_readline_task).
+    """
     player.start()
     loop = asyncio.get_running_loop()
 
@@ -70,28 +82,37 @@ async def _synthesize_with_interrupt(
             print(f"Error: {e}", file=sys.stderr)
 
     synth_task = asyncio.ensure_future(loop.run_in_executor(None, _stream_to_player))
+    pending_read: asyncio.Task[bytes] | None = None
 
     while not synth_task.done():
-        input_wait = asyncio.create_task(input_queue.get())
+        if pending_read is None:
+            sys.stdout.write("> ")
+            sys.stdout.flush()
+            pending_read = asyncio.ensure_future(stdin_reader.readline())
+
         done, _ = await asyncio.wait(
-            {synth_task, input_wait},
+            {synth_task, pending_read},
             return_when=asyncio.FIRST_COMPLETED,
         )
 
-        if input_wait in done:
-            cmd = input_wait.result()
-            if cmd is not None and cmd.strip().lower() == "/interrupt":
+        if pending_read in done:
+            line = pending_read.result()
+            pending_read = None
+            if not line:  # EOF
+                synth_task.cancel()
+                player.interrupt()
+                return True, None
+            cmd = line.decode().rstrip("\n").strip().lower()
+            if cmd == "/interrupt":
                 synth_task.cancel()
                 player.interrupt()
                 print("Interrupted.")
-                return
-            elif cmd is not None and cmd.strip().lower() == "/quit":
+                return False, None
+            if cmd == "/quit":
                 synth_task.cancel()
                 player.interrupt()
-                await input_queue.put(cmd)
-                return
-        else:
-            input_wait.cancel()
+                return True, None
+            # Other input during synthesis is ignored
 
     try:
         await synth_task
@@ -99,10 +120,7 @@ async def _synthesize_with_interrupt(
         print(f"Error: {e}", file=sys.stderr)
 
     player.stop()
-
-
-def _read_input() -> str:
-    return input("> ")
+    return False, pending_read
 
 
 async def run_once(server_url: str, voice_id: str, model_id: str, speed: float, text: str) -> None:
