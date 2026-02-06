@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -46,4 +47,12 @@ def run_server(host: str = "0.0.0.0", port: int = 8880) -> None:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     app = create_app()
-    uvicorn.run(app, host=host, port=port)
+    try:
+        uvicorn.run(app, host=host, port=port)
+    except KeyboardInterrupt:
+        pass
+    # Work around a sentencepiece bug: its absl::Flag<bool> C++ destructor
+    # crashes during normal process exit (__cxa_finalize_ranges). Using
+    # _exit() skips C++ static destructors entirely.
+    # https://github.com/google/sentencepiece/issues/1069
+    os._exit(0)
