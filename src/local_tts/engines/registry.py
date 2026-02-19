@@ -40,24 +40,35 @@ def get_registry() -> EngineRegistry:
     return _registry
 
 
-def initialize_engines(preload: bool = True, model_options: ModelOptions | None = None) -> None:
+def initialize_engines(model_options: ModelOptions | None = None) -> None:
     if model_options is None:
         model_options = ModelOptions()
+
+    disabled = model_options.disabled
 
     from .kitten import KittenEngine
     from .kokoro import KokoroEngine
     from .pocket import PocketEngine
 
-    kokoro = KokoroEngine()
-    pocket = PocketEngine()
-    kitten = KittenEngine(model_size=model_options.kitten.model_size)
-    _registry.register(kokoro)
-    _registry.register(pocket)
-    _registry.register(kitten)
+    engines = []
 
-    if preload:
+    if "kokoro" not in disabled:
+        kokoro = KokoroEngine()
+        _registry.register(kokoro)
+        engines.append(kokoro)
+
+    if "pocket" not in disabled:
+        pocket = PocketEngine()
+        _registry.register(pocket)
+        engines.append(pocket)
+
+    if "kitten" not in disabled:
+        kitten = KittenEngine(model_size=model_options.kitten.model_size)
+        _registry.register(kitten)
+        engines.append(kitten)
+
+    if model_options.preload and engines:
         logger.info("Preloading models (this may take a while on first run)...")
-        kokoro.warmup()
-        pocket.warmup()
-        kitten.warmup()
+        for engine in engines:
+            engine.warmup()
         logger.info("All models preloaded")

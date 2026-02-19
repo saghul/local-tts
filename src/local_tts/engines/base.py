@@ -25,6 +25,8 @@ class KittenOptions:
 @dataclass
 class ModelOptions:
     kitten: KittenOptions = field(default_factory=KittenOptions)
+    preload: bool = True
+    disabled: set[str] = field(default_factory=set)
 
 
 class TTSEngine(Protocol):

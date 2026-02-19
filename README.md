@@ -55,6 +55,7 @@ uv run local-tts client -t "Hello, world!"
 
 ```
 uv run local-tts server [--host HOST] [--port PORT] [--kitten-model-size SIZE]
+                        [--no-preload] [--disable-kokoro] [--disable-pocket] [--disable-kitten]
 ```
 
 | Option | Default | Description |
@@ -62,8 +63,15 @@ uv run local-tts server [--host HOST] [--port PORT] [--kitten-model-size SIZE]
 | `--host` | `0.0.0.0` | Bind address |
 | `--port` | `8880` | Bind port |
 | `--kitten-model-size` | `micro` | KittenTTS model size: `mini`, `micro`, `nano`, or `nano-int8` |
+| `--no-preload` | | Skip preloading models at startup (lazy-load on first request instead) |
+| `--disable-kokoro` | | Disable the Kokoro engine |
+| `--disable-pocket` | | Disable the Pocket TTS engine |
+| `--disable-kitten` | | Disable the KittenTTS engine |
 
-All models are preloaded at startup, so the first request is served without delay.
+By default all models are preloaded at startup, so the first request is served without
+delay. Use `--no-preload` to skip this and load models lazily on first use. Disabled
+engines are not registered at all — any API request targeting a disabled engine will
+return an error.
 
 **KittenTTS model sizes**
 

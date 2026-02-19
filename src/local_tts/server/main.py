@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    initialize_engines(model_options=app.state.model_options)
+    initialize_engines(app.state.model_options)
     logger.info("TTS engines initialized")
     yield
 

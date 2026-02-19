@@ -27,6 +27,10 @@ def main() -> None:
         choices=["mini", "micro", "nano", "nano-int8"],
         help="KittenTTS model size (default: micro)",
     )
+    sp.add_argument("--no-preload", action="store_true", help="Skip preloading models at startup")
+    sp.add_argument("--disable-kokoro", action="store_true", help="Disable the Kokoro engine")
+    sp.add_argument("--disable-pocket", action="store_true", help="Disable the Pocket TTS engine")
+    sp.add_argument("--disable-kitten", action="store_true", help="Disable the KittenTTS engine")
 
     # Client
     cp = sub.add_parser(
@@ -61,8 +65,18 @@ def main() -> None:
         from .engines.base import KittenOptions, ModelOptions
         from .server.main import run_server
 
+        disabled = set()
+        if args.disable_kokoro:
+            disabled.add("kokoro")
+        if args.disable_pocket:
+            disabled.add("pocket")
+        if args.disable_kitten:
+            disabled.add("kitten")
+
         model_options = ModelOptions(
             kitten=KittenOptions(model_size=args.kitten_model_size),
+            preload=not args.no_preload,
+            disabled=disabled,
         )
         run_server(host=args.host, port=args.port, model_options=model_options)
 
