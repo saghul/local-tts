@@ -19,6 +19,7 @@ dependencies = [
     "pocket-tts>=1.0.0",
     "httpx>=0.28.1",
     "en-core-web-sm",
+    "kittentts>=0.1.0",
 ]
 
 [project.scripts]
@@ -41,3 +42,4 @@ asyncio_mode = "auto"
 kokoro = { git = "https://github.com/hexgrad/kokoro" }
 misaki = { git = "https://github.com/hexgrad/misaki" }
 en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+kittentts = { git = "https://github.com/KittenML/KittenTTS" }

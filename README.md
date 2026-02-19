@@ -1,11 +1,11 @@
 # local-tts
 
-Local TTS server with an [ElevenLabs](https://elevenlabs.io/docs/api-reference/text-to-speech/convert-as-stream)-compatible API. Runs entirely on your machine using [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) and [Pocket TTS](https://huggingface.co/kyutai-labs/pocketlm-tts-pretrained-600M) models.
+Local TTS server with an [ElevenLabs](https://elevenlabs.io/docs/api-reference/text-to-speech/convert-as-stream)-compatible API. Runs entirely on your machine using [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), [Pocket TTS](https://huggingface.co/kyutai-labs/pocketlm-tts-pretrained-600M), and [KittenTTS](https://github.com/KittenML/KittenTTS) models.
 
 ## Features
 
 - ElevenLabs-compatible HTTP and WebSocket streaming APIs
-- Two TTS engines loaded simultaneously: Kokoro (82M params) and Pocket TTS (600M params)
+- Three TTS engines loaded simultaneously: Kokoro (82M params), Pocket TTS (600M params), and KittenTTS (15M-80M params)
 - 24 kHz 16-bit signed PCM audio output
 - Models downloaded and cached automatically on first run
 - Built-in CLI client with interactive REPL and one-shot modes
@@ -54,16 +54,25 @@ uv run local-tts client -t "Hello, world!"
 ### Server
 
 ```
-uv run local-tts server [--host HOST] [--port PORT]
+uv run local-tts server [--host HOST] [--port PORT] [--kitten-model-size SIZE]
 ```
 
 | Option | Default | Description |
 |---|---|---|
 | `--host` | `0.0.0.0` | Bind address |
 | `--port` | `8880` | Bind port |
+| `--kitten-model-size` | `micro` | KittenTTS model size: `mini`, `micro`, `nano`, or `nano-int8` |
 
-Both Kokoro and Pocket TTS models are preloaded at startup, so the first request
-is served without delay.
+All models are preloaded at startup, so the first request is served without delay.
+
+**KittenTTS model sizes**
+
+| Size | Parameters | File Size | HuggingFace model |
+|---|---|---|---|
+| `mini` | 80M | 80 MB | `KittenML/kitten-tts-mini-0.8` |
+| `micro` | 40M | 41 MB | `KittenML/kitten-tts-micro-0.8` |
+| `nano` | 15M | 56 MB | `KittenML/kitten-tts-nano-0.8` |
+| `nano-int8` | 15M | 19 MB | `KittenML/kitten-tts-nano-0.8-int8` |
 
 ### Client
 
@@ -75,7 +84,7 @@ uv run local-tts client [--server URL] [--voice VOICE_ID] [--model MODEL_ID] [--
 |---|---|---|
 | `--server` | `http://localhost:8880` | Server URL |
 | `--voice` | `af_heart` | Voice ID (see [Voices](#voices)) |
-| `--model` | `kokoro` | Model ID: `kokoro` or `pocket` |
+| `--model` | `kokoro` | Model ID: `kokoro`, `pocket`, or `kitten` |
 | `--speed` | `1.0` | Speech speed multiplier (0.25 - 4.0) |
 | `-t, --text` | | Text to synthesize (skip REPL) |
 
@@ -126,7 +135,7 @@ Synthesize text and stream audio back as raw PCM bytes.
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `text` | string | yes | | Text to synthesize |
-| `model_id` | string | no | `kokoro` | Engine to use: `kokoro` or `pocket` |
+| `model_id` | string | no | `kokoro` | Engine to use: `kokoro`, `pocket`, or `kitten` |
 | `voice_settings` | object | no | | Optional voice settings |
 | `voice_settings.speed` | float | no | `1.0` | Speed multiplier (0.25 - 4.0) |
 
@@ -167,7 +176,7 @@ ws://localhost:8880/v1/text-to-speech/{voice_id}/stream-input?model_id=kokoro
 
 | Parameter | Default | Description |
 |---|---|---|
-| `model_id` | `kokoro` | Engine to use: `kokoro` or `pocket` |
+| `model_id` | `kokoro` | Engine to use: `kokoro`, `pocket`, or `kitten` |
 | `output_format` | `pcm_24000` | Output format (only `pcm_24000` supported) |
 
 **Protocol**
@@ -233,7 +242,8 @@ List available TTS models.
 ```json
 [
   {"model_id": "kokoro", "name": "Kokoro"},
-  {"model_id": "pocket", "name": "Pocket"}
+  {"model_id": "pocket", "name": "Pocket"},
+  {"model_id": "kitten", "name": "Kitten"}
 ]
 ```
 
@@ -291,6 +301,19 @@ List available TTS models.
 | `marius` | Marius | male |
 | `javert` | Javert | male |
 | `jean` | Jean | male |
+
+### KittenTTS voices
+
+| Voice ID | Name | Gender |
+|---|---|---|
+| `bella` | Bella | female |
+| `jasper` | Jasper | male |
+| `luna` | Luna | female |
+| `bruno` | Bruno | male |
+| `rosie` | Rosie | female |
+| `hugo` | Hugo | male |
+| `kiki` | Kiki | female |
+| `leo` | Leo | male |
 
 ## Audio format
 

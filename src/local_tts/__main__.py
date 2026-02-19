@@ -6,6 +6,7 @@ import sys
 DEFAULT_VOICES = {
     "kokoro": "af_heart",
     "pocket": "alba",
+    "kitten": "bella",
 }
 
 
@@ -20,6 +21,12 @@ def main() -> None:
     sp = sub.add_parser("server", help="Start the TTS server")
     sp.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)")
     sp.add_argument("--port", type=int, default=8880, help="Bind port (default: 8880)")
+    sp.add_argument(
+        "--kitten-model-size",
+        default="micro",
+        choices=["mini", "micro", "nano", "nano-int8"],
+        help="KittenTTS model size (default: micro)",
+    )
 
     # Client
     cp = sub.add_parser(
@@ -35,6 +42,9 @@ def main() -> None:
             "  pocket   Pocket TTS (600M params, English)\n"
             "           Voices: alba (default), fantine, cosette, eponine,\n"
             "           azelma, marius, javert, jean\n"
+            "  kitten   KittenTTS (15M-80M params, English)\n"
+            "           Voices: bella (default), jasper, luna, bruno,\n"
+            "           rosie, hugo, kiki, leo\n"
             "\n"
             "use GET /v1/voices?model_id=MODEL for the full voice list"
         ),
@@ -48,8 +58,13 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "server":
+        from .engines.base import KittenOptions, ModelOptions
         from .server.main import run_server
-        run_server(host=args.host, port=args.port)
+
+        model_options = ModelOptions(
+            kitten=KittenOptions(model_size=args.kitten_model_size),
+        )
+        run_server(host=args.host, port=args.port, model_options=model_options)
 
     elif args.command == "client":
         import asyncio

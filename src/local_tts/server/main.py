@@ -8,6 +8,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from ..engines.base import ModelOptions
 from ..engines.registry import initialize_engines
 from .routes import router
 from .websocket import ws_router
@@ -17,18 +18,19 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    initialize_engines()
+    initialize_engines(model_options=app.state.model_options)
     logger.info("TTS engines initialized")
     yield
 
 
-def create_app() -> FastAPI:
+def create_app(model_options: ModelOptions | None = None) -> FastAPI:
     app = FastAPI(
         title="Local TTS Server",
         description="ElevenLabs-compatible local TTS server",
         version="0.1.0",
         lifespan=lifespan,
     )
+    app.state.model_options = model_options or ModelOptions()
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -41,12 +43,12 @@ def create_app() -> FastAPI:
     return app
 
 
-def run_server(host: str = "0.0.0.0", port: int = 8880) -> None:
+def run_server(host: str = "0.0.0.0", port: int = 8880, model_options: ModelOptions | None = None) -> None:
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    app = create_app()
+    app = create_app(model_options=model_options)
     try:
         uvicorn.run(app, host=host, port=port)
     except KeyboardInterrupt:

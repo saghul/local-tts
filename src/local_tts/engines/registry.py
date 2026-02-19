@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .base import TTSEngine
+from .base import ModelOptions, TTSEngine
 
 logger = logging.getLogger(__name__)
 
@@ -40,17 +40,24 @@ def get_registry() -> EngineRegistry:
     return _registry
 
 
-def initialize_engines(preload: bool = True) -> None:
+def initialize_engines(preload: bool = True, model_options: ModelOptions | None = None) -> None:
+    if model_options is None:
+        model_options = ModelOptions()
+
+    from .kitten import KittenEngine
     from .kokoro import KokoroEngine
     from .pocket import PocketEngine
 
     kokoro = KokoroEngine()
     pocket = PocketEngine()
+    kitten = KittenEngine(model_size=model_options.kitten.model_size)
     _registry.register(kokoro)
     _registry.register(pocket)
+    _registry.register(kitten)
 
     if preload:
         logger.info("Preloading models (this may take a while on first run)...")
         kokoro.warmup()
         pocket.warmup()
+        kitten.warmup()
         logger.info("All models preloaded")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import AsyncIterator, Protocol
 
 import numpy as np
@@ -15,6 +15,16 @@ class VoiceInfo:
     name: str
     language: str
     gender: str
+
+
+@dataclass
+class KittenOptions:
+    model_size: str = "micro"
+
+
+@dataclass
+class ModelOptions:
+    kitten: KittenOptions = field(default_factory=KittenOptions)
 
 
 class TTSEngine(Protocol):
