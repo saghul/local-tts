@@ -241,6 +241,58 @@ List available voices for a given model.
 ]
 ```
 
+### `POST /mcp` (MCP)
+
+[Model Context Protocol](https://modelcontextprotocol.io/) endpoint for agent integration.
+Exposes a `text_to_speech` tool that synthesizes text and plays it on the server's audio output.
+
+The model and voice are configured via query parameters on the endpoint URL, so each
+MCP client can target a specific engine/voice combination.
+
+**MCP client configuration**
+
+```json
+{
+  "mcpServers": {
+    "local-tts": {
+      "type": "streamable-http",
+      "url": "http://localhost:8880/mcp?model=kokoro&voice=af_heart"
+    }
+  }
+}
+```
+
+**URL query parameters**
+
+| Parameter | Default | Description |
+|---|---|---|
+| `model` | `kokoro` | Engine to use: `kokoro`, `pocket`, or `kitten` |
+| `voice` | per-model default | Voice ID (see [Voices](#voices)) |
+
+**Tool: `text_to_speech`**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `text` | string | (required) | Text to synthesize |
+| `speed` | float | `1.0` | Speech speed multiplier (0.25 - 4.0) |
+
+Returns a confirmation string with the text spoken and audio duration.
+
+**Example: Claude Code**
+
+Add to `.claude/settings.json` (project) or `~/.claude.json` (global):
+
+```json
+{
+  "mcpServers": {
+    "local-tts": {
+      "type": "http",
+      "url": "http://localhost:8880/mcp?model=kokoro&voice=af_heart"
+    }
+  }
+}
+```
+
 ### `GET /v1/models`
 
 List available TTS models.

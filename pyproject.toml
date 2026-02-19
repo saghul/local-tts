@@ -20,6 +20,7 @@ dependencies = [
     "httpx>=0.28.1",
     "en-core-web-sm",
     "kittentts>=0.1.0",
+    "fastmcp>=2.0.0",
 ]
 
 [project.scripts]

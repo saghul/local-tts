@@ -10,20 +10,23 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ..engines.base import ModelOptions
 from ..engines.registry import initialize_engines
+from .mcp import NormalizeMountPath, create_mcp_app
 from .routes import router
 from .websocket import ws_router
 
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    initialize_engines(app.state.model_options)
-    logger.info("TTS engines initialized")
-    yield
-
-
 def create_app(model_options: ModelOptions | None = None) -> FastAPI:
+    mcp_app = create_mcp_app()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        initialize_engines(app.state.model_options)
+        logger.info("TTS engines initialized")
+        async with mcp_app.lifespan(app):
+            yield
+
     app = FastAPI(
         title="Local TTS Server",
         description="ElevenLabs-compatible local TTS server",
@@ -40,6 +43,10 @@ def create_app(model_options: ModelOptions | None = None) -> FastAPI:
     )
     app.include_router(router)
     app.include_router(ws_router)
+
+    app.mount("/mcp", mcp_app)
+    app.add_middleware(NormalizeMountPath, path="/mcp")
+
     return app
 
 
